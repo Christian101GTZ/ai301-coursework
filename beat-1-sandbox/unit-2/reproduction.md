@@ -201,22 +201,28 @@ fields.
    safety check: all 3 correct.
 6. Fixed the "Conventions / disclosure" check. Re-tested just `pkg-03` plus `pkg-20` as a
    safety check: both correct.
-7. Final full run: **19/20 correct — passed the 18/20 bar.**
+7. Final full run, saved with `--save-run eval-run.txt`: `categories: clear-accept 7/8
+   disclosure 1/1  no-evidence 4/4  unfollowable-comms 3/3  wrong-target 4/4` /
+   `agreement: 19/20 scored items  (bar: 18/20: PASS)`.
 
 **Package analysis**
 
-`pkg-05`: my rubric said reject, the correct answer was accept. The report described making
-a test file ("a list of dependencies plus one bad setting") but didn't show the file's exact
-contents. My check treated that as too vague, even though it was actually clear enough to
-redo. This is a borderline case my wording still doesn't fully cover.
+`pkg-05`: my rubric said reject (gold: accept). The report's steps read: "wrote a minimal
+`env.yml` containing a valid `dependencies:` list plus a `category:` section (the section
+conda does not recognize)." My check treated that as too vague, even though it was actually
+clear enough to redo. This is a borderline case my wording still doesn't fully cover.
 
 **Check rationale**
 
-My "Conventions / disclosure" check now says: pass if the repo has no AI policy; if it does
-have one, pass unless something clearly breaks that specific rule. I originally only checked
-for a missing "I used AI" statement. That broke on `pkg-03`, whose repo rule wasn't about
-disclosing AI use — it just required comments to be written by a real person. So I widened
-the check to cover any clear rule-break, not just one specific type.
+Quoting the "Conventions / disclosure" row from `rubric.md` (`tools/repro-check/rubric.md`)
+exactly as it now reads: "Pass if the repo states no AI-related policy. If it does state one,
+pass unless there is a specific sign the comment or report violates that stated rule (for
+example: the policy requires a disclosure statement and none is present; or the policy
+requires human-authored comments and something indicates the comment was not human-written).
+No violation signal found counts as pass." I originally only checked for a missing "I used
+AI" statement. That version failed `pkg-03`, whose repo policy wasn't about disclosure at all
+— it required comments to be written by a real person. So I widened the check to catch any
+concrete sign of a rule-break, not just one specific policy type.
 
 **Trade-offs**
 
