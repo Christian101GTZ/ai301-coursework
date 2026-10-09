@@ -1,0 +1,25 @@
+# Rubric: is this pull request ready to submit?
+
+## Checks
+
+| Check | Evidence | Pass condition | Weight |
+|---|---|---|---|
+| fidelity | the diff's changed files and hunks, read against the plan's scope (what it will change, what it won't) and the plan's Deviations section | passes if every change in the diff is named in the plan or in its Deviations section, and everything the plan promised is either present in the diff or recorded as left out in the Deviations section (or the plan context's note) and said again in the description; fails if the diff adds work the plan did not name (a new option or setting, a refactor, a rename pass, a rewrite of code the plan did not touch, a change in a file the plan did not list) with no deviation note, or if a planned part is missing and nothing in the plan or the description says so | required |
+| description | the PR description's statements about the change, read against the diff and the commits | passes if every claim the description makes about the change is true of the diff: each listed change has a matching hunk, nothing in the diff is left unmentioned when the description says what the change covers, and a claim like "no changes beyond the plan" or "docs updated" is true; fails if the description claims a change the diff does not contain, or describes the diff as smaller or more faithful than it is | required |
+| evidence | the test evidence section (before/after output and commands), read against the plan's test plan and the issue's failing case | passes if the evidence re-runs the plan's repro on the path the issue says is broken and shows the observable result the plan's test plan named, both before and after the change (a command and its output, a test name that fails then passes, a transcript); the issue's own failing case must show its before and after output; any other case the plan's test plan names must at least have its observed outcome stated in the evidence ("prints the one-time warning"), or be named as deferred in both the plan (Deviations or note) and the description; fails if the evidence is a bare claim ("tests pass", "works on my machine", "verified for a full day") with nothing named, if it only exercises a control or unchanged path, or if a case the plan's test plan names is never mentioned in the evidence at all | required |
+| checks | the test evidence and the description's checklist or requirements section, read against the checks the repo asks for (the PR template's checklist, the contribution docs, or the repo-facts block) | passes if every check the repo names (unit tests, lint, type check, build, or similar) is named with its outcome in the test evidence or in the description's checklist or requirements section (a command or check name plus pass/fail/clean, a ticked checklist item, a test count, or pasted output); pasted output is not required, and a failing check reported with its reason counts; if the repo names no checks, this passes; fails if a named check is never mentioned, or the evidence offers only a blanket claim that names no specific check ("CI is green", "all tests pass") | required |
+| clean | the diff itself, hunk by hunk | passes if every hunk serves the planned change; fails if the diff contains leftover debug output (print, eprintln, console.log, dbg), commented-out code or commented-out earlier attempts, unused variables, functions, or imports added by this diff, formatting-only or whitespace-only churn, blocks of identical re-printed lines, or hunks in files or areas the plan does not touch | required |
+| standards | the PR title and description, read against the repo's PR template and contribution policy (the repo-facts block in eval mode; `.github/PULL_REQUEST_TEMPLATE.md` and `docs/CONTRIBUTING.md` in live mode) | passes only if both hold: (1) if the repo has a PR template or states required description parts (an issue reference like "Closes #", a checklist, a type-of-change section, a testing section), the description contains each required part filled in, where "N/A" with a reason counts as filled and an empty or untouched section does not; if the repo states no template or required parts, this part passes; (2) if the repo's stated policy requires AI-use disclosure, the description contains a disclosure of AI use in the author's own words; if no such policy is stated, this part passes; fails if either part is missing | required |
+
+## Verdict rule
+
+Accept (ready to submit) if every required check passes. Reject (hold)
+if any required check fails. An unclear grade on a required check
+counts as a fail: a claim that cannot be checked from the package is
+not ready to go to a reviewer. This rubric has no preferred checks;
+all six are required.
+
+Honest shortfalls are not failures. If the PR leaves out part of the
+plan, or needed a change the plan did not name, and both the plan
+(its Deviations section or note) and the description say so, that
+does not fail fidelity or evidence. Only a silent difference does.

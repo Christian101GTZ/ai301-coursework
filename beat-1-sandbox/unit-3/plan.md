@@ -171,6 +171,14 @@ result first; the before-run I record is my own.
    copy-paste between the four tests. Same file, same four tests, same
    two asserts per test.
 
+3. **A wrong guess in Risks and unknowns, corrected:** I wrote that the
+   "3 warnings" in my pytest runs come from `utcnow()` in `auth.py`.
+   The pytest output names the real sources: `core/config.py` line 7
+   (a Pydantic deprecation) and `api/main.py` line 84 plus FastAPI's
+   `on_event` (a lifespan deprecation). None come from the new test
+   file. Nothing in the build changed because of this; the note is
+   here so the plan is true.
+
 Everything else matches the plan: one new file, the four named tests,
 `401` plus `WWW-Authenticate: Bearer`, no message-text asserts, and no
 edits to `auth.py`, `core/security.py`, or `tests/conftest.py`.

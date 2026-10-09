@@ -1,0 +1,3 @@
+# Store the pr-precheck skill files byte-for-byte: the harness fingerprints
+# their raw bytes in beat-1-sandbox/unit-4/eval-run.txt.
+tools/pr-precheck/** -text
