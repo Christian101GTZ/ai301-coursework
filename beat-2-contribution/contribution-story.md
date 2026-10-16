@@ -55,10 +55,9 @@ happened; these entries are the toolkit's own timeline.
 All four entries are graded. Keep every heading below, and fill each
 one in the week it belongs to.
 
-**Unit 5: [one line on the tool work]**
+**Unit 5: Built issue-scout, then fixed its search order and cut its rubric from 14 lines to 8**
 
-[2-4 sentences: what you built (the scout, your strategy), what broke
-or fell short, what changed because of it.]
+I turned my Unit 1 grader into a scout with three searches from my fit profile (llm, embeddings, fastapi) and sorting rules that rank the results before the top five get graded. My first scan accepted 0 of 5 because I sorted by most recent update, and a new "can I take this?" comment counts as an update, so issues people had already claimed rose to the top. Sorting by fewest comments first raised it to 2 of 5, and I cut the rubric to three checks with eight yes/no lines; a test on four issues flipped one fuzzy rejection to accept while both canaries stayed rejected. On the Issue Selection site most good issues were already taken, sometimes by a pull request that wasn't linked to the issue, so I checked a full page at once, searched pull requests by keyword, and found dna #127, which my scout accepted.
 
 **Unit 6: [one line on the tool work]**
 
