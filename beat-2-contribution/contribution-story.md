@@ -165,31 +165,117 @@ free, and gave them a way to keep it.
 
 **Environment Setup**
 
-[What a stranger would need to stand this up: your operating system,
-the relevant versions (language, runtime, package manager, the project
-itself), and how you set the project up. Then the challenges you faced
-and how you solved them, or that none came up.]
+Repo state: AcademySoftwareFoundation/dna, branch main, commit 8df0a00
+("Dna docs improvements (#241)"), cloned from my fork Christian101GTZ/dna
+on 2026-10-22. Issue #127 in plain words: dna has an AI helper that
+writes draft review notes for the shot version you are looking at, and a
+checkbox "Regenerate notes on version change." With the box on, clicking
+from version A to B and back to A asks the AI to write A's notes again,
+even though A already has notes. The issue wants that second request
+skipped.
+
+What a stranger needs to get the same result:
+
+- Windows 11 Home, using the Git Bash terminal.
+- Node v24.21.0, npm 11.19.0, git 2.54.0.
+- `npm install` from `frontend/` (666 packages added).
+- The project's own test runner, vitest 2.1.9, run from
+  `frontend/packages/app`.
+- Not needed: Docker, an AI API key, or the backend. The frontend tests
+  swap the server and the AI for fakes, so they run offline in seconds.
+
+Baseline before touching anything: `npm run test:run` from
+`frontend/packages/app` gave 16 test files passed, 100 tests passed. So
+anything that fails after this is about the issue, not my setup.
+
+Challenges: the clone first landed inside my course repo because my
+terminal was still in that folder, so I moved it up one level. npm
+printed vulnerability warnings and skipped two packages' install
+scripts; I left both alone (running `npm audit fix` would change dna's
+lock file for nothing to do with my issue), and the tests ran fine.
 
 **Steps to Reproduce**
 
-1. [Step 1]
-2. [Step 2]
-3. [Observed result]
+Where the behavior lives, from reading the code (three files: a switch,
+a watcher, and a messenger):
+
+- The switch: `frontend/packages/app/src/components/SettingsModal.tsx`,
+  around lines 999 to 1010, the checkbox and the sentence under it. It
+  saves a yes/no value called `regenerate_on_version_change`.
+- The watcher: `frontend/packages/app/src/hooks/useAISuggestion.ts`,
+  lines 193 to 213. Each time the version changes it asks "is the switch
+  on?" and if yes calls `runGenerate()`. It never asks "does this version
+  already have a note?" That missing question is the bug.
+- The messenger: `frontend/packages/core/src/aiSuggestionManager.ts`,
+  `generateSuggestion` at line 191. It always sends the request; its
+  existing-note logic only runs after the answer, to decide what to show.
+
+I found them by searching the frontend for the issue's words ("version
+change"), which led to the checkbox label; the checkbox's variable name
+led to the watcher, the only other file that reads it; the watcher's call
+led to the messenger.
+
+1. Clone the repo and run `npm install` from `frontend/`.
+2. Add the test file `frontend/packages/app/src/hooks/useAISuggestion.test.tsx`
+   (check out branch `fix/127-regenerate-only-when-no-note` from my fork,
+   commit be6ab59). The test fakes the API and the suggestion manager,
+   pre-loads settings with `regenerate_on_version_change: true`, and acts
+   out the story: open version A (expect 0 generate calls), pretend a
+   note was generated for A, switch to B (expect exactly 1 call, for B),
+   switch back to A (expect the count to stay at 1).
+3. From `frontend/packages/app`, run `npx vitest run src/hooks/useAISuggestion`.
+4. Observed result: steps 1 to 3 of the test pass; the last check fails
+   with "expected spy to be called 1 times, but got 2 times." Going back
+   to A asked the AI a second time even though A already had a note.
 
 **Reproduction Evidence**
 
-- **Commit showing reproduction:** [link to commit in your fork]
-- **Screenshots/logs:** [if applicable]
-- **My findings:** [what you discovered during reproduction; an
-  honest, evidenced cannot-reproduce that led you to re-pick or ask
-  the maintainer belongs here and costs you nothing]
+- **Commit showing reproduction:** https://github.com/Christian101GTZ/dna/commit/be6ab59f66adaa0e9ffa896dd1746fb8b8cf93b7
+- **Screenshots/logs:** copied from my terminal:
+
+```
+FAIL  src/hooks/useAISuggestion.test.tsx > useAISuggestion: regenerate on version change (issue #127) > does not generate again when switching back to a version that already has a note
+AssertionError: expected "spy" to be called 1 times, but got 2 times
+ ❯ src/hooks/useAISuggestion.test.tsx:141:52
+    140|     rerender({ versionId: 'A' });
+    141|     expect(aiSuggestionManager.generateSuggestion).toHaveBeenCalledTimes(1);
+
+Test Files  1 failed (1)
+     Tests  1 failed (1)
+```
+
+- **My findings:** the bug is real on today's main. With the setting on,
+  every version change asks the AI to write, including a change back to
+  a version that already has a note in the current session. The new
+  result is added to that version's note history and the screen jumps to
+  it, so it feels like the old notes were replaced. The code confirms it:
+  the watcher has no existing-note check and the messenger always sends.
+  Not yet checked: the running app in a browser, which needs Docker and
+  an AI key; I plan to do that next and record a GIF, since the issue
+  asks for one on UI changes. Also noted: the sentence under the checkbox
+  ("Automatically regenerate the AI note when switching to a different
+  version in review.") describes today's behavior, not the desired one,
+  so it changes with the fix.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: repro-check, in live mode with the new wild scope. I graded
+  claim-draft.md alone first (step 7), then claim-draft.md and
+  repro-draft.md together (step 12), against the real issue.
+- What it produced: accept on the claim alone. On the full package, a
+  first verdict of reject on Reproducible steps: my report told a
+  stranger to run a test file that existed only on my disk, so they would
+  get "no test files found." After I fixed that, accept on all five
+  checks.
+- Difficulties: the reject was the tool doing its job, not a flaw. One
+  thing it kept repeating as a voice note is that my plain-words
+  explanations ("a test is a tiny program") are more than a maintainer
+  needs; that is true for a posted comment, but this report is never
+  posted, so I kept the style for the story and will trim it in the PR.
+- What changed: I pushed the test to branch
+  fix/127-regenerate-only-when-no-note in my fork (commit be6ab59, signed
+  off as dna requires) and pasted the full test file into the report,
+  with both ways to get it. Nothing changed in the tool itself.
 
 ---
 
