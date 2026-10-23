@@ -54,9 +54,9 @@ happened; these entries are the toolkit's own timeline.
 All four entries are graded. Keep every heading below, and fill each
 one in the week it belongs to.
 
-**Unit 5: Built issue-scout, then fixed its search order and cut its rubric from 14 lines to 8**
+**Unit 5: Built issue-scout, fixed its sort order, then cut its rubric from 14 lines to 8**
 
-I turned my Unit 1 grader into a scout with three searches from my fit profile (llm, embeddings, fastapi) and sorting rules that rank the results before the top five get graded. My first scan accepted 0 of 5 because I sorted by most recent update, and a new "can I take this?" comment counts as an update, so issues people had already claimed rose to the top. Sorting by fewest comments first raised it to 2 of 5, and I cut the rubric to three checks with eight yes/no lines; a test on four issues flipped one fuzzy rejection to accept while both canaries stayed rejected. On the Issue Selection site most good issues were already taken, sometimes by a pull request that wasn't linked to the issue, so I checked a full page at once, searched pull requests by keyword, and found dna #127, which my scout accepted.
+I turned my Unit 1 grader into a scout with three searches from my fit profile: llm, embeddings, and fastapi. My first scan accepted 0 of 5. The cause was my sort order. I sorted by most recent update, and a "can I take this?" comment counts as an update, so already-claimed issues rose to the top. I changed only the sort, to fewest comments first, and the next scan accepted 2 of 5. After that, I cut the rubric from 14 lines to 8 as a separate change. I tested it on four issues: one fuzzy rejection flipped to accept, and both canaries stayed rejected. On the Issue Selection site, most good issues were already taken, some by pull requests that weren't linked to the issue. Checking a full page at once found dna #127, which my scout accepted.
 
 **Unit 6: [one line on the tool work]**
 
@@ -78,24 +78,61 @@ drafted, what you did with the draft.]
 
 ## Why I Chose This Issue
 
-[1-2 paragraphs in your own words: how you searched, what your scan
-surfaced, what your scout's verdict said, why this issue fits your
-profile, and what you hope to learn. If your scout's verdict on it
-was reject and you chose it anyway, say so here and say why; choosing
-against your own tool silently is what loses points. Close with an
-honest read of the tool itself: where the scout fell short on a real
-wild search and what you changed or would change, or what convinced
-you it held up. **Record the link to your claim comment in this section too.**
-Not claimed yet? Write `claim pending` and today's date where the link goes,
-and add the link the moment your claim lands.]
+**Claim comment:** https://github.com/AcademySoftwareFoundation/dna/issues/127#issuecomment-6205471051
+
+I found this issue on the course's Issue Selection site. I searched with the tags
+bug and help wanted instead of good first issue, because I wanted a real bug or
+feature to fix, not just a starter task, and most of the good-first-issue picks
+were already taken. After checking a whole page of results at once for assignees,
+open pull requests, and "I'm working on this" comments, dna #127 was one of the
+few still free. The project is an AI tool for reviewing film dailies, and I wanted
+to work on something with AI involved, so it fit what I was looking for.
+
+My scout accepted it on October 15. When I re-graded it on October 22 with the
+patched rubric, it was accepted again with a difficulty note of moderate: the
+issue names the area (the version-change hook and the settings text) but not the
+files, so finding the spot is on me. It fits my profile because it is a behavior
+bug in the React and TypeScript frontend of a Python-first repo, and the repo has
+a frontend test suite I can add a test to. I hope to learn how to trace a bug
+through a codebase I have never seen, test each step before moving on, document
+what I did, and run enough tests at the end to be sure nothing else broke.
+
+The scout did not hold up perfectly. On the first re-grade it rejected my own
+issue because of my own claim comment, since the availability check only ignored
+bots. It also passed a closed issue that a merged pull request had already solved,
+because nothing in the rubric asked whether the issue was still open. I fixed both
+in the availability check: comments from my own account no longer count, and the
+issue must be open with no merged pull request closing it. The scope patch itself
+held up: the tracker canary stayed rejected, and the difficulty note matched what
+I expected.
+
+One thing I chose with eyes open: someone asked to work on this issue in May and
+never followed up. The wild scope says a stranger's claim blocks you, so I did not
+claim over them silently. I named them in my claim, said why the issue looked
+free, and gave them a way to keep it.
 
 **Toolkit**
 
-- Tool: issue-scout (your scout: your search strategy, your rubric),
-  and how you used it
-- What it produced: [the scan and its verdict on this issue, described]
-- Difficulties: [where it fell short, or "none met" if none did]
-- What changed: [what you patched or would update, or "nothing"]
+- Tool: issue-scout. I used its three searches from my fit profile
+  (llm, embeddings, fastapi), sorted fewest comments first, and then
+  graded picks from the Issue Selection site one URL at a time against
+  my three-check rubric.
+- What it produced: accept on dna #127 on October 15, and accept again
+  on October 22 with the patched rubric, this time with a difficulty
+  note of moderate (the area is named, the files are not, and the
+  change touches two spots).
+- Difficulties: on the October 22 re-grade it rejected my own issue
+  because of my own claim comment, since the availability check only
+  ignored bots. It also passed usagetrim #54, a closed issue that a
+  merged pull request had already solved, because nothing asked if the
+  issue was still open. The scope patch flipped that old canary from
+  reject to accept, which turned out to be right: one merged pull
+  request did the whole thing, so it was one big piece of work.
+- What changed: I replaced my newcomer-scope check with scope-feasible
+  and added the difficulty note section, so loose edges raise a
+  warning instead of a rejection. Then I fixed availability twice:
+  comments from my own account no longer count, and the issue must be
+  open with no merged pull request closing it.
 
 ---
 
