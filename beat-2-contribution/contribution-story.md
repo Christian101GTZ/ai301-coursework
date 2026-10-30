@@ -138,26 +138,56 @@ free, and gave them a way to keep it.
 
 **Problem Description**
 
-[In your own words, what is broken or missing?]
+The AI suggestion feature is not responding correctly: with the
+"Regenerate notes on version change" setting on, it creates new AI notes
+even when the selected version already has notes. This causes
+unnecessary note generation and does not match the behavior the issue
+describes.
 
 **Expected Behavior**
 
-[What should happen?]
+When the setting is enabled, the AI should only generate notes when the
+user switches to a version that does not already have notes. Existing
+notes should stay as they are. The setting's description in the settings
+menu should say that this is how it works.
 
 **Current Behavior**
 
-[What actually happens?]
+When the user switches back to a version that already has notes, the AI
+regenerates the notes again instead of recognizing that the version
+already has them. Every switch costs an extra AI call, and the new note
+is added on top of the old one, so the screen jumps to the new one.
 
 **Affected Components**
 
-[Which parts of the codebase are involved?]
+- `frontend/packages/app/src/hooks/useAISuggestion.ts`: the hook where
+  note generation is triggered on version change (the effect at lines
+  193 to 213 checks only whether the setting is on).
+- `frontend/packages/app/src/components/SettingsModal.tsx`: where the
+  setting and its description are shown (around lines 999 to 1010).
+- `frontend/packages/core/src/aiSuggestionManager.ts`: where the
+  request to generate is actually sent (`generateSuggestion`, line 191).
+- `frontend/packages/app/src/hooks/useAISuggestion.test.tsx`: my new
+  test, which shows the extra generation.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: a scoped orientation run in Claude Code, pointed at only
+  `frontend/packages/app/src`, after I had found two of the files
+  myself by searching the code for the issue's words ("version change")
+  and then for the setting's variable name. The result went into my
+  repo memory file, `CLAUDE.local.md`, so every later session starts
+  from it.
+- What it produced: the three files above, how they connect (the
+  settings modal and the hook never import each other; they share one
+  TanStack Query key), what the hook does on a version switch, and that
+  no tests existed for these files yet.
+- Difficulties: none met in the run itself. The one judgment call was
+  keeping it scoped to one folder instead of mapping the whole repo,
+  which kept it to one short run.
+- What changed: nothing in the tool. I wrote the conclusions into the
+  memory file and deleted the template's instructions, so the file
+  stays under 60 lines.
 
 ---
 
@@ -283,29 +313,81 @@ Test Files  1 failed (1)
 
 **Analysis**
 
-[Your analysis of the root cause: what is causing the issue, traced
-to the files and functions involved.]
+The problem comes from useAISuggestion.ts. Its version-change effect (lines 193
+to 213) checks whether the "Regenerate notes on version change" setting is
+enabled, but it never checks whether the version already has notes stored in
+notesByVersionId. Because of this, switching back to a version that already has
+notes still calls runGenerate() and creates another AI note. SettingsModal.tsx
+only displays the setting and its description, and aiSuggestionManager.ts sends
+the request whenever the hook tells it to; its own memory of the latest note is
+private and only used after the server answers. So the problem starts in the
+hook, because it does not look at the existing notes before triggering
+generation.
 
 **Proposed Solution**
 
-[High-level description of your fix approach, and what you are
-deliberately NOT changing.]
+Most of the work goes in useAISuggestion.ts. In the version-change effect, before
+calling runGenerate(), I will check whether notesByVersionId already holds a note
+for the version being switched to, and skip generation if it does. Switching to
+a version with no note still generates, as today. I will also update the
+description text in SettingsModal.tsx so it clearly says that notes are only
+generated for versions that do not already have one.
+
+What I am deliberately not changing: aiSuggestionManager.ts (the shared core
+package; changing it would affect every caller), the manual Regenerate button
+(it must always send, with requireFresh), and the regenerate_on_transcript_update
+setting. The hook has one caller, AssistantPanel.tsx, so the change reaches one
+screen. One known limit, predicted from reading the code and not yet run:
+notesByVersionId is session memory, so after a page reload the first switch to a
+version should generate once. I will check that in the running app, and I will
+ask the maintainer in the PR whether they want the check to use a persisted note
+instead.
 
 **Implementation Plan**
 
-1. [Modify file X to do Y]
-2. [Add or change Z]
-3. [Update tests]
+1. On the existing branch fix/127-regenerate-only-when-no-note, add a check in
+   the version-change effect of useAISuggestion.ts: if notesByVersionId has a
+   note for the new version, do not call runGenerate(). Add notesByVersionId to
+   the effect's dependency list.
+2. Update the description text in SettingsModal.tsx to: "When you switch to a
+   version that has no AI note yet, generate one automatically. Versions that
+   already have a note are left as they are."
+3. Keep the reproduction test in useAISuggestion.test.tsx and format it with
+   Prettier.
+4. Run the test and confirm it goes from failing to passing: its last check,
+   that generateSuggestion is not called again on the switch back to a version
+   that already has a note, currently fails with "expected 1 times, but got 2
+   times". Run the full frontend tests to confirm nothing else broke.
+5. Run the manifest checks (tests, Prettier on the new file) and record the
+   evidence in test_evidence.md, plus a GIF of the behavior in the running app.
+6. Sign the EasyCLA, sign off every commit with git commit -s, and bring the
+   branch up to date with dna's main before opening the PR.
 
-[Record deviations here as they happen: what changed mid-build and
-why. A recorded deviation is honest work; silent drift is not.]
+Deviations: none yet. Recorded here as they happen.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: plan-check, in live mode with the wild scope, run on plan.md (a
+  copy of this section) and plan-comment.md (a short comment written as
+  if for the maintainer, never posted).
+- What it produced: a first verdict of reject with five checks passing
+  and the evidence check unclear: my comment said "reproduced this with
+  a test" but showed no steps and no observed result, and nothing is
+  posted on the thread (Unit 6 said not to post the repro). Second run:
+  accept on all six checks. It also noted that the issue's third
+  acceptance criterion (setting off, nothing generates) is not covered
+  by my test yet, and that my course practice of disclosing AI help was
+  missing from the comment.
+- Difficulties: the reject was fair, not a tool flaw. Two procedure gaps
+  it reported about itself: its first step looks for a "Repo:" line that
+  the wild scope file does not have, and it does not say whether
+  direction written in the issue body counts as thread direction.
+- What changed: in the comment, I folded in the test's steps, the branch
+  and commit, and the observed "expected 1 times, but got 2 times"; I
+  marked the page-reload point as a prediction with how I will check it
+  (my own "mark predictions as predictions" rule); and step 4 of the
+  plan now names the exact assertion. In the tool, nothing yet; the two
+  procedure gaps go on the list for the Unit 9 portfolio.
 
 ---
 
