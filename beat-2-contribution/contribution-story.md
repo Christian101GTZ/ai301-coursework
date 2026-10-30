@@ -248,7 +248,7 @@ led to the messenger.
 1. Clone the repo and run `npm install` from `frontend/`.
 2. Add the test file `frontend/packages/app/src/hooks/useAISuggestion.test.tsx`
    (check out branch `fix/127-regenerate-only-when-no-note` from my fork,
-   commit be6ab59). The test fakes the API and the suggestion manager,
+   commit deb20a7). The test fakes the API and the suggestion manager,
    pre-loads settings with `regenerate_on_version_change: true`, and acts
    out the story: open version A (expect 0 generate calls), pretend a
    note was generated for A, switch to B (expect exactly 1 call, for B),
@@ -260,7 +260,7 @@ led to the messenger.
 
 **Reproduction Evidence**
 
-- **Commit showing reproduction:** https://github.com/Christian101GTZ/dna/commit/be6ab59f66adaa0e9ffa896dd1746fb8b8cf93b7
+- **Commit showing reproduction:** https://github.com/Christian101GTZ/dna/commit/deb20a7a1df9928eac703a157dbf007f5aefcf92
 - **Screenshots/logs:** copied from my terminal:
 
 ```
@@ -303,7 +303,7 @@ Test Files  1 failed (1)
   needs; that is true for a posted comment, but this report is never
   posted, so I kept the style for the story and will trim it in the PR.
 - What changed: I pushed the test to branch
-  fix/127-regenerate-only-when-no-note in my fork (commit be6ab59, signed
+  fix/127-regenerate-only-when-no-note in my fork (commit deb20a7, signed
   off as dna requires) and pasted the full test file into the report,
   with both ways to get it. Nothing changed in the tool itself.
 
@@ -363,7 +363,17 @@ instead.
 6. Sign the EasyCLA, sign off every commit with git commit -s, and bring the
    branch up to date with dna's main before opening the PR.
 
-Deviations: none yet. Recorded here as they happen.
+Deviations:
+
+- 2026-10-29, after the build: while trying to break the fix in the
+  running app, I found that switching away from a version before its
+  note finishes made that note disappear, so the next visit generated
+  again. The cause is in the same hook: its "note finished" listener
+  ignored notes for any version not on screen. I added one more change,
+  not in the original plan: the listener now keeps a finished note for
+  any version in the current playlist, and only updates the on-screen
+  prompt and context for the version being viewed. Same file, about six
+  lines, plus a test for the exact sequence. plan.md updated to match.
 
 **Toolkit**
 
@@ -393,39 +403,184 @@ Deviations: none yet. Recorded here as they happen.
 
 ## Testing Strategy
 
-[What observable checks prove the fix: your reproduction steps re-run
-against the built change (before and after), and the repo's own test
-suite or checks with the outcome shown. "Tests pass" with nothing
-observable named is not a strategy.]
+The proof is the same test that showed the bug, re-run against the fix,
+plus the project's own checks.
+
+1. **Reproduction test, before and after.** The test in
+   `useAISuggestion.test.tsx` acts out the story: setting on, version A
+   gets a note, switch to B (must generate once), switch back to A
+   (must not generate again). Before the fix, on main at 8df0a00, its
+   last check failed: "expected spy to be called 1 times, but got 2
+   times." After the fix (commit cd6c287), the same test passes with no
+   changes to its logic.
+2. **Second test for the issue's third acceptance criterion.** With the
+   setting off, switching A to B to A generates nothing (0 calls). Added
+   in commit 341a7eb because plan-check pointed out the criterion was not
+   covered. Passes.
+3. **The full frontend suite, the way CI and the manifest run it.**
+   `npm run test-ci` from `frontend/`: app package 17 files, 102 tests
+   passed (100 existing plus my 2); core package 8 files, 140 tests
+   passed. Before my fix the same command showed exactly one failure, my
+   reproduction test.
+4. **Prettier on the file I added.** `npx prettier --check` on the test
+   file: clean. For the two upstream files I edited, the full Prettier
+   check already fails on main (40 files), so I measured drift instead:
+   useAISuggestion.ts went from 26 to 20 lines off, SettingsModal.tsx
+   from 195 to 191. Both went down, so every line I touched is in style
+   and I did not reformat the rest, to keep the diff readable.
+5. **Type check, as a no-change check.** `npm run typecheck` reports the
+   same 14 pre-existing errors in the same 11 files before and after my
+   change; none are in files I touched. The core package passes.
+6. **The running app, by hand.** Started the backend in Docker (mongo
+   and api) and the frontend dev server, with the mock production data
+   and Gemini. With the setting on: Regenerate on version A (counter 1),
+   Next Version to B (AI ran once), Previous Version to A (note shown
+   immediately, no AI run, counter still 1). Recorded as a 20-second
+   GIF. Also checked the page-reload case from my plan: after a reload
+   the app forgets its notes and generates once more per version, as
+   predicted; that goes in the PR as a question to the maintainer.
+
+7. **Trying to break it, by hand.** With the setting on: a long walk
+   forward through the nine-version playlist and all the way back
+   (loading only on the way forward); manual Regenerate on a version
+   with a note (counter goes to 2, as it should, the button is
+   untouched); setting off (nothing generates). Two findings:
+   - **Click away before a note finishes.** Start A's note, click to B
+     before it is done, come back to A: it generates again. From the
+     code, the hook only records a finished note for the version on
+     screen, so A's note was dropped. Pre-existing behavior, but the
+     issue's first criterion covers it, so I am handling it before the
+     PR: keep finished notes for any version in the playlist, show them
+     only for the one on screen, and add a test for this sequence.
+   - **A burst of requests hit Gemini's free-tier limit.** The app said
+     "Failed to generate note: 400"; the backend wraps any AI error as
+     400, and Google's usage page showed about 45 "429 TooManyRequests"
+     in that minute. Not the fix, and a live example of why needless
+     regeneration costs something.
+8. **Three more automated tests:** the A, B, C walk and back (exactly 2
+   generations, still 2 on the way back); the click-away case, which
+   failed on the old listener with "expected null to be 'Late note for
+   A'" and passes after the listener change; and manual Regenerate on a
+   version with a note (still generates). Five tests pass, and the full
+   suite is 105 app tests plus 140 core tests, all passing.
+
+All raw output is in test_evidence.md in my clone and goes into the PR
+description.
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: the project's own vitest runner and the checks listed in my
+  ship-manifest.md (the ship-gate's checklist), run by hand from a fresh
+  terminal before trusting them.
+- What it produced: the before/after pair for the reproduction test,
+  102 + 140 passing tests on the fixed branch, a clean Prettier check on
+  my new file, and the unchanged 14-error type-check list.
+- Difficulties: the first Prettier run flagged all 136 files because my
+  Windows clone had CRLF line endings (git's `core.autocrlf`); after
+  fixing the clone it still flagged 40, which turned out to fail on
+  dna's main too, because the upstream formatting workflow's `paths`
+  filter uses braces GitHub Actions does not expand, so it never runs.
+  The type check fails on main for the same reason.
+- What changed: `core.autocrlf false` plus a re-checkout in my clone;
+  the manifest's must-pass list is the tests and Prettier on my new
+  file only, with the full format and type checks moved to the excluded
+  table with today's date and the reason; and I re-ran the type check
+  after the fix to show the list did not change.
 
 ---
 
 ## Implementation Notes
 
-[A running log, added to as you work. Date each entry. What you
-built, decisions you made when you made them, wrong turns included.]
+**2026-10-22**
 
-**[Date]**
+Reproduced #127 with a failing test instead of the running app: no
+Docker, no API key, five seconds to run. Found the three files by
+searching for the issue's words, then the setting's variable name, then
+the one hook that reads it. Committed the failing test on branch
+fix/127-regenerate-only-when-no-note (deb20a7, signed off). Baseline:
+16 files, 100 tests passing before my test.
 
-[Entry]
+**2026-10-29 (setup)**
 
-**[Date]**
+Installed the ship-gate and patched it twice for Windows (python3 is a
+dead alias here; claude is installed as claude.cmd, so the script needed
+shutil.which). Spent most of the setup time on dna's checks: a CRLF
+problem in my clone, then the discovery that dna's frontend formatting
+and type-check workflow never runs upstream. Wrote the manifest around
+that honestly rather than hiding it.
 
-[Entry]
+**2026-10-29 (plan)**
+
+Chose to put the fix in the hook (useAISuggestion.ts) rather than the
+manager: the hook already keeps notesByVersionId, the manager's memory
+is private and only used after the server answers, and the manual
+Regenerate button depends on the manager always sending. plan-check
+rejected my first plan comment for showing no reproduction steps (I had
+not posted them on the thread, on purpose), then accepted once I folded
+the steps and the observed "expected 1, got 2" into the comment.
+
+**2026-10-29 (app check)**
+
+Ran the real app to see the fix with my own eyes. dna's bootstrap script
+failed at its last step on Windows (it handed `make` a docker-compose
+path with a space in it), so I started the two containers directly and
+the frontend dev server by hand. Confirmed in the browser: new setting
+text; back to a version with a note shows it instantly with no AI run;
+a version with no note still generates once; after a page reload the
+notes memory is gone and each version generates once more, exactly as
+predicted in the plan. Recorded the A to B to A switch as a GIF.
+
+**2026-10-29 (trying to break it)**
+
+Walked the nine-version playlist forward and back, pressed Regenerate
+twice on one version (counter 2, correct), and turned the setting off.
+Then found a gap myself: click away from a version before its note
+finishes, come back, and it generates again, because the hook drops a
+note that finishes for a version you are not looking at. Pre-existing,
+but within the issue's wording, so I chose to fix it before opening the
+PR instead of opening tonight. A burst of clicks also hit Gemini's
+free-tier rate limit (429 behind the app's 400), which is unrelated to
+the fix. Added a third test for the forward-and-back walk; 3 of 3 pass.
+
+**2026-10-29 (click-away fix)**
+
+Decided not to open the PR tonight and to close the gap I found instead.
+Changed the hook's "note finished" listener to keep notes for any
+version in the playlist (filed under the right version) and to update
+the on-screen prompt and context only for the version being viewed.
+Captured the before with a stash of the hook alone: the click-away test
+failed with "expected null to be 'Late note for A'"; restored the edit:
+5 of 5 pass, full suite 105 + 140. Also fixed the test fake so that
+unsubscribing really removes a listener, which the new code needs.
+Recorded as a deviation in Solution Approach and in plan.md.
+
+**2026-10-29 (build)**
+
+Edited the effect: computed `versionChanged` and `hasNote`, generate
+only when `versionChanged && !hasNote`, added notesByVersionId to the
+dependency list. Rewrote the setting description. Reproduction test
+went red to green on the first run. Added a second test for "setting
+off, nothing generates" after plan-check flagged that criterion. Kept
+my three new description lines wrapped the way Prettier wants, and did
+not reformat the rest of either upstream file. Two signed-off commits
+(cd6c287 fix, 341a7eb tests), pushed. No deviations from the plan at this point (see the click-away entry below).
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: Claude Code sessions started inside the dna clone, which read my
+  repo memory file (CLAUDE.local.md) at startup, with the voice guard
+  and ship-gate hooks loaded.
+- What it produced: every session started already knowing the three
+  files, the line numbers, the test commands, and dna's rules, so the
+  build itself was two small edits I made by hand in the editor, and the
+  test scaffolding for the second case.
+- Difficulties: none with the memory file itself. The build's only
+  surprise was that Prettier wrapped my new description text
+  differently than I had, which took one re-wrap.
+- What changed: nothing in the tools. The memory file's "Build and test
+  commands" section now has the real, verified commands and the two
+  excluded checks, since the template asked for commands "copied
+  working, not from memory."
 
 ---
 
