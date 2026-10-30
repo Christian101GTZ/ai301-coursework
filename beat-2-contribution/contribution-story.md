@@ -11,7 +11,7 @@ files and no evidence uploads are part of Assignment 5.
 **Student:** Christian Gomez Diaz
 **GitHub Username:** Christian101GTZ
 **Issue:** https://github.com/AcademySoftwareFoundation/dna/issues/127
-**Pull Request:** [GitHub PR link, once opened]
+**Pull Request:** https://github.com/AcademySoftwareFoundation/dna/pull/260
 
 One repository, built across units 5 to 8, telling the whole story of your real
 contribution. Fill it as you work, not at the end — the sections below ask for evidence that
@@ -62,10 +62,9 @@ I turned my Unit 1 grader into a scout with three searches from my fit profile: 
 
 I added an Upstream section to my voice guide with four rules (two for claims, one for questions, one for pings), installed the guard hook, and wired repro-check, plan-check, and pr-precheck to one guide. Three things broke on Windows: python3 is a dead shortcut, so I changed the hook to call python; the install's link command copies files instead of linking, so I used one-line pointer files instead; and the guard's draft check failed with "the claude CLI is not on PATH," because claude is installed as claude.cmd and Python could not find it, so I patched one line to look it up with shutil.which. After the patch, the wiring test stopped a body-less comment command as expected, and the manual check passed my claim. For the memory file, one scoped orientation run over frontend/packages/app/src found the three files behind issue #127 and the lines where the hook regenerates without checking for an existing note; the file is 60 lines and git does not see it.
 
-**Unit 7: [one line on the tool work]**
+**Unit 7: Installed the ship-gate, wrote a manifest around two checks that already fail on dna's main, and let the gate stop me four times before the PR opened**
 
-[2-4 sentences: the ship-gate and your gate manifest. What it produced
-on your real branch, what fought you, what changed because of it.]
+I installed the ship-gate and patched it twice for Windows, the same python3 and claude.cmd fixes as the voice guard. Writing the manifest took most of the setup time: Prettier flagged all 136 files because my clone had Windows line endings, and after fixing the clone it still flagged 40, which turned out to fail on dna's main too, along with 14 type errors, because dna's frontend workflow never runs (its paths filter uses braces GitHub Actions does not expand). So the manifest's must-pass list is the tests and Prettier on my new file, with the two broken checks in the excluded table, dated, with the reason. On my real branch the gate stopped me for a stale local main after rebasing (88 files in the diff), a double blank line, and trailing spaces, then passed all six pr-precheck checks; its voice notes made me untick the GIF box until the files were really attached and mark "same with real notes" as an expectation. Nothing in the rubric changed, because every stop was a real problem on my side.
 
 **Unit 8: [one line on the tool work]**
 
@@ -542,6 +541,23 @@ PR instead of opening tonight. A burst of clicks also hit Gemini's
 free-tier rate limit (429 behind the app's 400), which is unrelated to
 the fix. Added a third test for the forward-and-back walk; 3 of 3 pass.
 
+**2026-10-30**
+
+Gemini's free tier reset overnight (20 requests a day; I had used 23).
+Re-ran the click-away case in the running app with the listener change:
+pressed Regenerate on A, clicked to B before the note finished, waited,
+clicked back to A. The note was already there, no loading, counter 1.
+Ship-gate passed all six of my pr-precheck checks on the first run of
+the day; its voice notes made me reword three sentences in the PR
+description (don't claim an attachment I haven't added yet; mark "same
+with real notes" as an expectation; shorten one paragraph).
+Opened PR #260 at 1:08 PM. After opening, two more break-tests with the
+final code: setting off, moving to a version with no note generated
+nothing, and manual Regenerate still worked; setting on, a fast walk A
+through E started one generation per new version and the walk back was
+instant on every one, four notes kept while off-screen. One more click
+hit Gemini's 5-per-minute cap (400), which is the free tier, not the fix.
+
 **2026-10-29 (click-away fix)**
 
 Decided not to open the PR tonight and to close the gap I found instead.
@@ -586,27 +602,69 @@ not reformat the rest of either upstream file. Two signed-off commits
 
 ## Pull Request
 
-**PR Link:** [GitHub PR URL when opened]
+**PR Link:** https://github.com/AcademySoftwareFoundation/dna/pull/260
 
-**PR Description:** [what the PR says; much of the content above
-adapts into it]
+**PR Description:** Opened 2026-10-30 against main from my fork branch
+fix/127-regenerate-only-when-no-note, seven signed-off commits, three
+files changed. The description follows dna's PR template. Summary:
+"Fixes #127"; with the setting on, switching to a version that already
+had an AI note generated a new one; the change skips generation when
+the version already has a note in the current session, and updates the
+setting's description. It carries the trace (checkbox in
+SettingsModal.tsx, to the setting key, to the one hook that reads it,
+to the manager), the two code changes in useAISuggestion.ts (the
+hasNote check in the version-change effect, and the listener that now
+keeps finished notes for any version in the playlist), the new test
+file with five tests, what I deliberately did not change
+(aiSuggestionManager.ts, the manual Regenerate button, the
+transcript-update setting), and one question for the maintainer:
+notesByVersionId is session memory, so after a reload the first switch
+to a version generates once more; would they prefer the check to use a
+saved note. How I Tested: the reproduction test before (expected 1 call,
+got 2) and after (5 passed), npm run test-ci (app 105, core 140), Prettier
+on the new file, the full format and type checks reported as already
+failing on main with the reason, the running-app walkthrough with the
+history counter staying at 1, and the no-transcript note marked as an
+expectation. AI assistance disclosed in my own words. The GIF and the
+settings screenshot are added to the description on GitHub right after
+opening, because the command line cannot upload files.
 
 **Maintainer Feedback:**
 
-- [Date]: [feedback received, or "none yet"; silence is a normal
-  state and costs you nothing]
-- [Date]: [how you addressed it]
+- 2026-10-30: none yet. Opened at 1:08 PM PT. DCO check passes; EasyCLA
+  check red until I sign it (same day).
+- [Date]: [how I addressed it]
 
-**Status:** [Awaiting review / Iterating / Merged / Closed. The
-status is a fact you record, never a grade: the PR is graded as
-opened.]
+**Status:** Awaiting review
 
 **Toolkit**
 
-- Tool:
-- What it produced:
-- Difficulties:
-- What changed:
+- Tool: ship-gate, the hook that runs my manifest's checks and then my
+  pr-precheck before Claude Code is allowed to open a pull request. I
+  ran it by hand with --branch before opening, and the hook let the PR
+  through on the fresh pass.
+- What it produced: four stops before a pass. First, pr-precheck saw 88
+  changed files, because after rebasing onto dna's main my local main
+  branch was still a week old and the gate diffs against local main;
+  moving local main up fixed it. Then a double blank line, then
+  trailing spaces on the line I had just cleaned (whitespace-only
+  hunks fail my clean check). Then PASS on all six checks, twice more
+  after I edited the description, with voice notes each time: don't
+  claim an attachment I haven't added yet (so I unticked the GIF box
+  until the files were up), mark "same with real notes" as an
+  expectation, and shorten one paragraph.
+- Difficulties: on Windows the installer's hook called python3 (dead
+  alias) and the script launched claude by bare name (claude.cmd), the
+  same two patches as the voice guard; dna's own bootstrap script died
+  at its last step on a docker-compose path with a space in it, so I
+  started the containers by hand; the gate also blocked a Claude Code
+  command of mine that merely mentioned the PR-create command inside a
+  note it was saving, because it cannot tell a mention from an attempt.
+- What changed: the two Windows patches to the installed gate; the
+  manifest's excluded table for dna's two checks that already fail on
+  main; local main fast-forwarded to upstream before every gate run.
+  Nothing changed in the rubric: every stop was a real problem with the
+  branch or the description.
 
 ---
 
