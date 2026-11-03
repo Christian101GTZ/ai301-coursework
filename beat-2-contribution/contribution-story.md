@@ -518,6 +518,17 @@ rejected my first plan comment for showing no reproduction steps (I had
 not posted them on the thread, on purpose), then accepted once I folded
 the steps and the observed "expected 1, got 2" into the comment.
 
+**2026-10-29 (build)**
+
+Edited the effect: computed `versionChanged` and `hasNote`, generate
+only when `versionChanged && !hasNote`, added notesByVersionId to the
+dependency list. Rewrote the setting description. Reproduction test
+went red to green on the first run. Added a second test for "setting
+off, nothing generates" after plan-check flagged that criterion. Kept
+my three new description lines wrapped the way Prettier wants, and did
+not reformat the rest of either upstream file. Two signed-off commits
+(cd6c287 fix, 341a7eb tests), pushed. No deviations from the plan at this point (see the click-away entry below).
+
 **2026-10-29 (app check)**
 
 Ran the real app to see the fix with my own eyes. dna's bootstrap script
@@ -541,6 +552,18 @@ PR instead of opening tonight. A burst of clicks also hit Gemini's
 free-tier rate limit (429 behind the app's 400), which is unrelated to
 the fix. Added a third test for the forward-and-back walk; 3 of 3 pass.
 
+**2026-10-29 (click-away fix)**
+
+Decided not to open the PR tonight and to close the gap I found instead.
+Changed the hook's "note finished" listener to keep notes for any
+version in the playlist (filed under the right version) and to update
+the on-screen prompt and context only for the version being viewed.
+Captured the before with a stash of the hook alone: the click-away test
+failed with "expected null to be 'Late note for A'"; restored the edit:
+5 of 5 pass, full suite 105 + 140. Also fixed the test fake so that
+unsubscribing really removes a listener, which the new code needs.
+Recorded as a deviation in Solution Approach and in plan.md.
+
 **2026-10-30**
 
 Gemini's free tier reset overnight (20 requests a day; I had used 23).
@@ -557,29 +580,6 @@ nothing, and manual Regenerate still worked; setting on, a fast walk A
 through E started one generation per new version and the walk back was
 instant on every one, four notes kept while off-screen. One more click
 hit Gemini's 5-per-minute cap (400), which is the free tier, not the fix.
-
-**2026-10-29 (click-away fix)**
-
-Decided not to open the PR tonight and to close the gap I found instead.
-Changed the hook's "note finished" listener to keep notes for any
-version in the playlist (filed under the right version) and to update
-the on-screen prompt and context only for the version being viewed.
-Captured the before with a stash of the hook alone: the click-away test
-failed with "expected null to be 'Late note for A'"; restored the edit:
-5 of 5 pass, full suite 105 + 140. Also fixed the test fake so that
-unsubscribing really removes a listener, which the new code needs.
-Recorded as a deviation in Solution Approach and in plan.md.
-
-**2026-10-29 (build)**
-
-Edited the effect: computed `versionChanged` and `hasNote`, generate
-only when `versionChanged && !hasNote`, added notesByVersionId to the
-dependency list. Rewrote the setting description. Reproduction test
-went red to green on the first run. Added a second test for "setting
-off, nothing generates" after plan-check flagged that criterion. Kept
-my three new description lines wrapped the way Prettier wants, and did
-not reformat the rest of either upstream file. Two signed-off commits
-(cd6c287 fix, 341a7eb tests), pushed. No deviations from the plan at this point (see the click-away entry below).
 
 **Toolkit**
 
