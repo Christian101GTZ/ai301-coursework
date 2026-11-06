@@ -66,10 +66,9 @@ I added an Upstream section to my voice guide with four rules (two for claims, o
 
 I installed the ship-gate and patched it twice for Windows, the same python3 and claude.cmd fixes as the voice guard. Writing the manifest took most of the setup time: Prettier flagged all 136 files because my clone had Windows line endings, and after fixing the clone it still flagged 40, which turned out to fail on dna's main too, along with 14 type errors, because dna's frontend workflow never runs (its paths filter uses braces GitHub Actions does not expand). So the manifest's must-pass list is the tests and Prettier on my new file, with the two broken checks in the excluded table, dated, with the reason. On my real branch the gate stopped me for a stale local main after rebasing (88 files in the diff), a double blank line, and trailing spaces, then passed all six pr-precheck checks; its voice notes made me untick the GIF box until the files were really attached and mark "same with real notes" as an expectation. Nothing in the rubric changed, because every stop was a real problem on my side.
 
-**Unit 8: [one line on the tool work]**
+**Unit 8: Installed the PR monitor, wrote my playbook, and kept its one draft off the thread**
 
-[2-4 sentences: the PR-monitor and your playbook. What it read, what it
-drafted, what you did with the draft.]
+My nudge threshold is 7 quiet days, because four of dna's last five outside PRs got a reply the same day and the slowest took 7. The monitor read PR #260, saw it was merged, and drafted a thank-you; I did not send it, because I had already thanked jspada200 and the draft asked whether #127 still needed closing when it had already closed. The report also said "review decision: none yet" after an approval, a leftover GitHub value the monitor prints as is. On Windows the script could not find claude.cmd, so I patched one line with shutil.which, the same fix as the last two tools.
 
 ---
 
