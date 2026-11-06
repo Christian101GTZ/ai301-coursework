@@ -680,25 +680,34 @@ opening, because the command line cannot upload files.
 
 **Technical Skills Gained**
 
-[What you learned technically, named concretely.]
+- Followed a React setting from the checkbox in SettingsModal.tsx to the hook that reads it, useAISuggestion.ts, and found the effect that ran on every version switch.
+- Reproduced first, on a clean baseline (100 tests passing on main), with a Vitest test that failed before the fix (expected 1 AI call, got 2) and passed after.
+- Changed an effect's condition and its dependency array, then asked when the new value changes and tested each case: switching back to a version with a note, a note finishing after switching away, the setting turned off, and the manual Regenerate button still working. Five tests in total.
+- Tried to break my own fix, found the click-away case, and fixed the listener behind it.
+- Wrote a PR description for the maintainer, not for me: the symptom-to-cause trace, what I left alone and why, and every test, GIF and commit reachable by link.
+- Rebased onto upstream main, pushed with --force-with-lease, signed commits with -s, signed the EasyCLA.
+- Ran the backend and Mongo in Docker with the Vite dev server to test in the app and record a GIF.
+- Fixed Windows line endings in my clone (core.autocrlf false) so Prettier stopped flagging every file.
 
 **Challenges Overcome**
 
-[What was hard and how you solved it; point at the real events, the
-Toolkit blocks above are full of them.]
+- The fix was not finished when I thought it was. Testing in the app, I started a note on version A, switched to B before it finished, came back to A, and it regenerated. The listener dropped finished notes for any version not on screen. I changed the listener to keep notes for every version in the playlist, added a test for that case, and recorded a second GIF.
+- Prettier flagged all 136 frontend files on my first run. The cause was Windows line endings in my clone, not the code. I set core.autocrlf to false and re-checked out. It still flagged 40 files and 14 type errors, which turned out to fail on dna's main too because dna's formatting workflow never runs. So my manifest requires the tests and Prettier on my new file only, with the two broken checks listed as excluded, with the reason.
+- The Gemini free tier ran out (20 requests a day) in the middle of app testing. I spaced requests a minute apart and finished the click-away re-test the next day.
 
 **What I'd Do Differently Next Time**
 
-[Reflection on your process.]
+- Run the app first. In unit 6 I took the suggestion to work from the failing test and put off running dna locally until unit 7. The click-away case, which became half of the fix, only appeared when I clicked through versions in the running app. Next time the app runs on day one, before the test.
+- Ask design questions on the issue, not in the PR. I found by reading the code that notes only live while the page is open, and I saved that as a question in the PR description. It could have changed the shape of the fix, so it belonged as one line on issue #127 before I coded. The grader's feedback on unit 7 made the same point.
+- One PR, one change. When the click-away gap showed up mid-build, I bundled its fix into #260 and said so in the description. It merged, but the cleaner move was a follow-up issue, with the maintainer deciding whether to bundle. Next time I ask that question before adding a second change.
+- Match the code around me. The one review comment on #260 was that my two-line comment above the listener was "superfluous." dna's hooks carry few comments, and mine explained something the code already said. Next time I read the surrounding file's style first and comment only where the code cannot speak for itself.
 
 ---
 
 ## Resources Used
 
-[What actually helped, not a reading list. List things this story
-already shows you using: the doc you followed to set the environment
-up, the thread that explained the bug, the person who answered you.
-One real entry beats ten plausible ones.]
-
-- [Link to documentation that helped]
-- [Discussion, issue, or post that helped]
+- [dna CONTRIBUTING.md](https://github.com/AcademySoftwareFoundation/dna/blob/main/CONTRIBUTING.md): read before claiming. EasyCLA, signed commits, tests required, GIF for UI changes, Prettier. The PR followed all five.
+- [Issue #127](https://github.com/AcademySoftwareFoundation/dna/issues/127): jspada200's bug report and acceptance criteria. My claim, plan, and test names come from it.
+- [PR #197](https://github.com/AcademySoftwareFoundation/dna/pull/197): an outside contributor's small fix with a test, merged. The model for my PR's shape.
+- [useDraftNote.test.tsx](https://github.com/AcademySoftwareFoundation/dna/blob/main/frontend/packages/app/src/hooks/useDraftNote.test.tsx): the existing hook test I copied the mocking pattern from (vi.mock of ../api, QueryClient wrapper).
+- CodePath grader feedback on units 6 and 7: shaped the PR description (trace, reachable links, maintainer-level wording) and the reflection above.
